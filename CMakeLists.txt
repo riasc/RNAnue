@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.22.1)
 project(RNAnue VERSION 0.2.3)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS -fopenmp)
 
 include(CMakePrintHelpers)
 
@@ -11,8 +10,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/Config.hpp.in ${CMAKE_CURRENT
 
 ###### SeqAn #####
 list (APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/seqan3/build_system")
-find_package (seqan3 3.0 REQUIRED)
-find_package(OpenMP)
+find_package (seqan3 3.3 REQUIRED)
 
 ###### Boost ######
 set(Boost_DEBUG ON)
