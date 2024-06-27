@@ -17,7 +17,7 @@ Preproc::~Preproc() {}
 void Preproc::processing(fs::path& in, fs::path& out) {
     std::cout << helper::getTime() << "Trimming on sample: " << in << "\n";
 
-    std::mutex inMutex, outMutex; //
+    std::mutex inMutex, outMutex, progressMutex; //
     seqan3::sequence_file_input fin{in.string()};
     seqan3::sequence_file_output fout{out.string()};
 
@@ -28,6 +28,7 @@ void Preproc::processing(fs::path& in, fs::path& out) {
         for (auto & record : reads)
         {
             if(readcount != 0 && readcount % 100000 == 0) {
+                std::lock_guard<std::mutex> lock(progressMutex);
                 std::cout << "\r" << helper::getTime() << readcount << " reads processed " << std::flush;
             }
             readcount++;
@@ -81,7 +82,7 @@ void Preproc::processing(fs::path& inFwd, fs::path& outFwd, fs::path& inRev, fs:
     seqan3::sequence_file_output outR1unmrgSeq{outR1unmerged.string()};
     seqan3::sequence_file_output outR2unmrgSeq{outR2unmerged.string()};
 
-    std::mutex outMutex;
+    std::mutex outMutex, progressMutex;
 
     int readcount = 0;
     auto inFwdSeqBuf = inFwdSeq | seqan3::views::async_input_buffer(100);
@@ -93,6 +94,7 @@ void Preproc::processing(fs::path& inFwd, fs::path& outFwd, fs::path& inRev, fs:
             dtp::QualVector qualFwd, qualRev;
 
             if(readcount != 0 && readcount % 100000 == 0) {
+                std::lock_guard<std::mutex> lock(progressMutex);
                 std::cout << "\r" << helper::getTime() << "Processed reads: " << readcount << std::flush;
             }
             readcount++;
