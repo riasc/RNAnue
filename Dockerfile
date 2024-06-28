@@ -45,7 +45,7 @@ RUN make && make install
 
 # retrieve RNAnue
 WORKDIR /
-RUN git clone https://github.com/Ibvt/RNAnue.git
+RUN git clone https://github.com/riasc/RNAnue.git
 WORKDIR /RNAnue
 
 # retrieve SeqAn3
