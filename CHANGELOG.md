@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pipeline order**: Fixed wrong execution order in `complete` subcall — `detect` was running before `align` (#1, PR #14)
 - **Overlap check**: Fixed tautological condition `p1Start >= p1Start` in `SplitReadCalling::decide()` that caused incorrect overlap filtering (#1, PR #14)
 - **Missing return**: Added missing `return false` in `SplitReadCalling::matchSpliceSites()` to fix undefined behavior (#1, PR #14)
+- **Docker CI**: Fixed workflow to build-only on PRs instead of attempting to push, and fixed deprecated `::set-output` syntax (PR #15)
+- **Dockerfile**: Updated base image from Ubuntu 23.04 (EOL) to 24.04 LTS (PR #15)
+
+## Changed
+
+- **README**: Revised with updated URLs, corrected build instructions, complete dependency list, and missing subcall/tag documentation (PR #15)
 
 # [0.2.4]
 
