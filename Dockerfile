@@ -5,7 +5,7 @@
 ############################################################
 
 # set the base image to debian
-FROM ubuntu:23.04
+FROM ubuntu:24.04
 # tag version (extract from Config.h)
 ARG VERSION=v0.2.0
 # file author
