@@ -319,7 +319,7 @@ void SplitReadCalling::decide(std::map<int, std::vector<SAMrecord>>& putative, a
                         auto p2End = p2Tags.get<"XY"_tag>();
 
                         // prevent overlap between read position -> same segment of read
-                        if ((p1Start >= p1Start && p2Start <= p1End) ||
+                        if ((p2Start >= p1Start && p2Start <= p1End) ||
                             (p1Start >= p2Start && p1Start <= p2End)) {
                             continue;
                         }
@@ -418,6 +418,7 @@ bool SplitReadCalling::matchSpliceSites(dtp::Interval& spliceSites, std::optiona
     } else {
         return false;
     }
+    return false;
 }
 
 void SplitReadCalling::storeSegments(auto& splitrecord, std::optional<int32_t> refPos, dtp::DNASpan& seq,

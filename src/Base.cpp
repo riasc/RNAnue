@@ -31,8 +31,8 @@ Base::Base(po::variables_map params) : params(params), paramsVal(params), data(p
                     } else {
                         if(subcall == "complete") {
                             data.preproc();
-                            data.detect();
                             data.align();
+                            data.detect();
                             if(params["clust"].as<std::bitset<1>>() == std::bitset<1>("1")) {
                                 data.clustering();
                             }
