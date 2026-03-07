@@ -1,38 +1,61 @@
-[![docker-release](https://github.com/Ibvt/RNAnue/actions/workflows/docker.yml/badge.svg)](https://github.com/Ibvt/RNAnue/actions/workflows/docker.yml)
+[![docker-release](https://github.com/riasc/RNAnue/actions/workflows/docker.yml/badge.svg)](https://github.com/riasc/RNAnue/actions/workflows/docker.yml)
 
-# RNAnue - 0.2.4
+# RNAnue
 
-## About
-RNAnue is a comprehensive analysis to detect RNA-RNA interactions from Direct-Duplex-Detection (DDD) data.
+RNAnue is a comprehensive analysis tool to detect RNA-RNA interactions from Direct-Duplex-Detection (DDD) data.
+
+> **Note**: This is an independently maintained fork. The original project was developed at [Ibvt/RNAnue](https://github.com/Ibvt/RNAnue) and is now continued by the original group at [RNABioInfo/RNAnue](https://github.com/RNABioInfo/RNAnue).
 
 ## Install
+
 ### Dependencies
-RNAnue has the following dependencies, whereas the brackets indicate the version RNAnue has 
-been build and tested on. Make sure the requirements are satified by your system. cmake is able
-to detect the Boost libraries system-wide. However, Seqan3 is expected to be located in the current 
-folder of RNAnue as specified in the CMakeLists.txt. Segemehl and the Vienna binaries need to be
-located in $PATH.
 
-* [Boost C++ Libraries](https://www.boost.org/) (v1.7.2)
-* [SeqAn](https://github.com/seqan/seqan3) (v3.3.0)
-* [Segemehl](http://www.bioinf.uni-leipzig.de/Software/segemehl/) (v0.3.4)
-* [Vienna Package](https://www.tbi.univie.ac.at/RNA/#binary_packages) (>= v2.4.17)
+RNAnue has the following dependencies. Make sure the requirements are satisfied by your system.
 
-### CMake
-RNAnue is build using CMake. At first, clone the repository and change into the source directory.
+* **C++20** compiler (GCC >= 12, Clang >= 14)
+* **[CMake](https://cmake.org/)** (>= 3.22.1)
+* **[Boost C++ Libraries](https://www.boost.org/)** (>= 1.56.0) — program_options, filesystem, unit_test_framework
+* **[SeqAn3](https://github.com/seqan/seqan3)** (v3.3.0) — expected in `./seqan3/` in the repo root
+* **[HTSlib](https://github.com/samtools/htslib)** — found via pkg-config
+* **[Segemehl](http://www.bioinf.uni-leipzig.de/Software/segemehl/)** (v0.3.4) — must be in `$PATH`
+* **[ViennaRNA Package](https://www.tbi.univie.ac.at/RNA/)** (>= v2.4.17) — must be in `$PATH`
+
+### Building from source
+
+Clone the repository and retrieve SeqAn3:
+```bash
+git clone https://github.com/riasc/RNAnue.git
+cd RNAnue
+
+# download SeqAn3 into the repo root
+curl -L https://github.com/seqan/seqan3/releases/download/3.3.0/seqan3-3.3.0-Source.tar.xz -o seqan3.tar.xz
+tar -xf seqan3.tar.xz && mv seqan3-3.3.0-Source seqan3 && rm seqan3.tar.xz
 ```
-git clone https://github.com/Ibvt/RNAnue.git
-cd RNAnue 
+
+Build using CMake (out-of-source build):
+```bash
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make
 ```
-In the next step, retrieve the SeqAn library and place it in the root folder of RNAnue. CMake is a 
-cross-platform Makefile generator. For that, we provide the [CMakeLists](./source/CMakeLists.txt) 
-to simplify the build process. In particular, it utilizes the instructions given in the CMakeLists.
-It is recommended to create a "out-of-source build". For that, create a build folder (e.g., ./bin)
-and cmake into the root directory.
+
+The `RNAnue` binary will be in the `build/` directory.
+
+### Docker
+
+A ready-to-use Docker container is available:
+```bash
+docker pull riasc/rnanue:latest
+docker run riasc/rnanue RNAnue <subcall> --config /path/to/params.cfg
 ```
-cmake ../source/
+
+### Singularity
+
+The Docker container can also be used with Singularity:
+```bash
+singularity pull docker://riasc/rnanue:latest
+singularity exec --bind /path/to/data:/data rnanue_latest.sif RNAnue <subcall> --config /data/params.cfg
 ```
-This is be sufficient if the dependencies are located in $PATH. Calling `make` builds RNAnue. 
 
 ## Overview
 
@@ -40,160 +63,152 @@ This is be sufficient if the dependencies are located in $PATH. Calling `make` b
 
 ## Usage
 
-### Positional Arguments
-RNAnue provides different functional arguments (subcalls) for individual procedures. These include `RNAnue preproc`, 
-`RNAnue align`, `RNAnue clustering`, `RNAnue analysis`. In additon, `RNAnue complete` applies the whole workflow.
+### Subcalls
 
-## Input
-RNAnue requires the sequencing files to be in a specific folder structure. The root folders of the 
-treatments (--trtms) and controls (--ctrls) are specified accordingly. These folders contain subfolders
-with arbitrary conditions (e.g., treatment, cell lines,...) that in turn contain the read files, e.g.,
+RNAnue provides different subcalls for individual procedures:
 
-```
-./trtms/
-    condition1 
-    condition2
-./ctrls
-    condition1
-    condition2
-```
-It is to be noted that the `--trtms` needs to be specified. However, `--ctrls` may be not set (optional).
+| Subcall | Description |
+| ------- | ----------- |
+| `preproc` | Adapter trimming, quality filtering, PE merging |
+| `align` | Read alignment via segemehl |
+| `detect` | Split read detection from aligned BAM files |
+| `clustering` | Merge overlapping split reads into clusters |
+| `analysis` | Annotation, statistical scoring, interaction tables |
+| `complete` | Run the full pipeline in sequence |
 
-## Parameters
-
-RNAnue accepts parameter settings both from the commandline and through a configuration file.
-For the latter, we provide a template configuration file ([params.cfg](./build/params.cfg)) that
-allows to set the parameters in a more convenient fashion. This means that the call of RNAnue 
-is reduced to the following call. 
-```
+```bash
 RNAnue <subcall> --config /path/to/params.cfg
 ```
-Here, subcall corresponds to positional arguments.In any case, the specifying parameters over the command lines has 
-precedence over the config file.
+
+### Input
+
+RNAnue requires sequencing files in a specific folder structure. The root folders for treatments (`--trtms`) and controls (`--ctrls`) contain subfolders with arbitrary condition names, each holding the read files:
+
+```
+trtms/
+    condition1/    # FASTQ files
+    condition2/
+ctrls/             # optional
+    condition1/
+    condition2/
+```
+
+The `--trtms` parameter is required. `--ctrls` is optional.
+
+### Parameters
+
+RNAnue accepts parameters from the command line and through a configuration file:
+```bash
+RNAnue <subcall> --config /path/to/params.cfg
+```
+Command-line parameters take precedence over the config file.
 
 ## Results
 
-In principle, the results of the analysis are stored in the specified output folder and its subfolders
-(e.g., ./preproc, ./align, ./clustering, ./analysis). RNAnue reports the split reads in SAM format, the clusters
-and the RNA-RNA interactions. RNAnue reports the split reads in SAM format. Additionally, the complementarity 
-scores and hybridization energies are stored in the tags FC and FE, respectively. We report the clusters in a
-custom format that includes the IDs of the clusters, its length, size and genomic coordinates.
+Results are stored in the specified output folder and its subfolders (`./preproc`, `./align`, `./detect`, `./clustering`, `./analysis`).
 
 ### Split Reads (.BAM)
 
-RNAnue reports the detected splits in .SAM format (RNAnue `detect`). In this file, pairs of rows represent the
-split reads, consisting of the individual segments, e.g
+RNAnue reports detected splits in BAM format (`detect` subcall). Pairs of rows represent the split reads consisting of individual segments:
 
 ```
-A00551:29:H73LYDSXX:1:1101:7274:10645	16	gi|170079663|ref|NC_010473.1|	3520484	22	1X51=	*	0	0	AGGGGTCTTTCCGTCTTGCCGCGGGTACACTGCATCTTCACAGCGAGTTCAA	*	XA:Z:TTTCTGG	XC:f:0.714286	XE:f:-15.6	XL:i:7	XM:i:5	XN:i:0	XR:f:0.0735294	XS:i:5	XX:i:1	XY:i:52
-A00551:29:H73LYDSXX:1:1101:7274:10645	16	gi|170079663|ref|NC_010473.1|	3520662	22	11=5S	*	0	0	TTCGATCAAGAAGAAC	*	XA:Z:GAAGAAC	XC:f:0.714286	XE:f:-15.6	XL:i:7	XM:i:5	XN:i:0	XR:f:0.0735294	XS:i:5	XX:i:53	XY:i:68
+A00551:...:10645  16  gi|...|NC_010473.1|  3520484  22  1X51=  *  0  0  AGGG...TCAA  *  XA:Z:TTTCTGG  XC:f:0.714  XE:f:-15.6  ...
+A00551:...:10645  16  gi|...|NC_010473.1|  3520662  22  11=5S  *  0  0  TTCG...GAAC  *  XA:Z:GAAGAAC  XC:f:0.714  XE:f:-15.6  ...
 ```
 
-In the following the tags are listed that are reported in the detected split reads. Please note that in the upper 
-segment the alignment is in reverse as done in the calculation of the complemtarity to represent the 3-5 and 5-3 
-duplex.
+Custom SAM tags reported in split reads:
 
-| tag | description |
+| Tag | Description |
 | --- | ----------- |
-| XC:f | complementarity |
-| XL:f | length of alignment |
-| XS:i | alignment score |
-| XM:i | matches in alignment |
-| XR:f | site length ratio |
-| XA:Z | alignment of sequence | 
-| XE:f | hybridization energy |
-| XD:f | MFE structure in dot-bracket notation |
+| XC:f | Complementarity score |
+| XE:f | Hybridization energy |
+| XA:Z | Alignment of sequence |
+| XM:i | Matches in alignment |
+| XL:i | Length of alignment |
+| XR:f | Site length ratio |
+| XS:i | Alignment score |
+| XD:Z | MFE structure in dot-bracket notation |
+| XX:i | Split boundary start |
+| XY:i | Split boundary end |
 
-### Clustering results
+### Clustering Results
 
-The `clustering` procedure reports a single clusters.tab file which is a tab-delimited file of the clustering results. 
-Here, each line represents a cluster that corresponds to overlapping split reads, defined by the two segments. The 
-columns are defined in the following:
+The `clustering` subcall produces a `clusters.tab` file — a tab-delimited file where each line represents a cluster of overlapping split reads:
 
 | Field | Description |
 | ----- | ----------- |
 | clustID | Unique identifier of the cluster |
 | fst_seg_chr | Chromosome (accession) of the first segment |
-| fst_seg_strd | Strand where the first segment is located |
-| fst_seg_strt | Start position of the first segment in the cluster |
-| fst_seg_end | End position of the first segment in the cluster |
+| fst_seg_strd | Strand of the first segment |
+| fst_seg_strt | Start position of the first segment |
+| fst_seg_end | End position of the first segment |
 | sec_seg_chr | Chromosome (accession) of the second segment |
-| sec_seg_strd | Strand where the second segment is located |
-| sec_seg_strt | Start position of the second segment in the cluster |
-| sec_seg_end | End position of the second segment in the cluster |
+| sec_seg_strd | Strand of the second segment |
+| sec_seg_strt | Start position of the second segment |
+| sec_seg_end | End position of the second segment |
 | no_splits | Number of split reads in the cluster |
 | fst_seg_len | Length of the first segment |
 | sec_seg_len | Length of the second segment |
 
-### Interaction table
+### Interaction Table
 
-The `analysis` procedure generates `_interactions` files for each library in which each line represents an annotated 
-split read that is mapped to a transcript interaction. The fields are defined as follows:
+The `analysis` subcall generates `_interactions` files for each library. Each line represents an annotated split read mapped to a transcript interaction:
 
 | Field | Description |
 | ----- | ----------- |
-| qname | read/template identifier |
-| fst_seg_strd | Strand where the first segment is located |
+| qname | Read/template identifier |
+| fst_seg_strd | Strand of the first segment |
 | fst_seg_strt | Start position of the first segment |
 | fst_seg_end | End position of the first segment |
-| fst_seg_ref | Reference name of the first segment corresponding to the seqid in GFF and/or clusterID |
-| fst_seg_name | Name of the first segment that corresponds to gene name/symbol and/or clusterID |
-| first_seg_bt | Biotype of the annotation transcript (if available) |
-| fst_seg_anno_strd | Strand information of the transcript in the overlapping annotation |
-| fst_seg_prod | Description of the transcript (if available in annotation) |
-| fst_seg_ori | Orientation of the segment with respect to annotation (sense/antisense) |
-| sec_seg_strd | Strand where the second segment is located |
+| fst_seg_ref | Reference name of the first segment |
+| fst_seg_name | Gene name/symbol of the first segment |
+| first_seg_bt | Biotype of the transcript |
+| fst_seg_anno_strd | Strand of the overlapping annotation |
+| fst_seg_prod | Description of the transcript |
+| fst_seg_ori | Orientation (sense/antisense) |
+| sec_seg_strd | Strand of the second segment |
 | sec_seg_strt | Start position of the second segment |
 | sec_seg_end | End position of the second segment |
-| sec_seg_ref | Reference name of the second segment corresponding to the seqid in GFF and/or clusterID |
-| sec_seg_name | Name of the second segment that corresponds to gene name/symbol and/or clusterID |
-| sec_seg_bt | Biotype of the annotation transcript (if available) |
-| sec_seg_anno_strd | Strand information of the transcript in the overlapping annotation |
-| sec_seg_prod | Description of the transcript (if available in annotation) |
-| sec_seg_ori | Orientation of the segment with respect to annotation (sense/antisense) |
-| cmpl | Complementarity score of the interaction |
-| fst_seg_compl_aln | Alignment results in the complementarity calculation of the first segment |
-| sec_seg_cmpl_aln | Alignment results in the complementarity calculation of the second segment |
-| mfe | Hybridisation energy of the interaction |
-| mfe_struc | Minimum free energy (MFE) structure of interaction in dot-bracket notation |
+| sec_seg_ref | Reference name of the second segment |
+| sec_seg_name | Gene name/symbol of the second segment |
+| sec_seg_bt | Biotype of the transcript |
+| sec_seg_anno_strd | Strand of the overlapping annotation |
+| sec_seg_prod | Description of the transcript |
+| sec_seg_ori | Orientation (sense/antisense) |
+| cmpl | Complementarity score |
+| fst_seg_compl_aln | Complementarity alignment of the first segment |
+| sec_seg_cmpl_aln | Complementarity alignment of the second segment |
+| mfe | Hybridization energy |
+| mfe_struc | MFE structure in dot-bracket notation |
 
-The main result of an RNAnue analysis are transcript interactions. They are stored in  the file `allints.txt` in the 
-same directory. Its entries are structured as described in the following where columns with prefix <sample> are given 
-for each sample specified in the analysis (within the same file).
+The main results are transcript interactions stored in `allints.txt`:
 
-| Field                 | Description |
-|-----------------------| ----------- |
-| fst_rna               | Gene/Transcript name of the first interaction partner |
-| sec_rna               | Gene/Transcript name of the second interaction partner |
-| fst_rna_ori           | Orientation of the first interaction partner with respect to annotation (sense/antisense) |
-| sec_rna_ori           | Orientation of the second interaction partner with respect to annotation (sense/antisense) |
-| \<sample\>_supp_reads | Number of (split)reads that support the interaction |
-| \<sample\>_ges        | Global energy score (gcs) of the interaction |
-| \<sample\>_ghs        | Global hybridisation score (ghs) of the interaction |
-| \<sample\>_pval       | Statistical significance (p-value) of the interaction |
-| \<library\>_padj      | Benjamini-Hochberg adjusted p-value among the samples |
+| Field | Description |
+| ----- | ----------- |
+| fst_rna | Gene/transcript name of the first partner |
+| sec_rna | Gene/transcript name of the second partner |
+| fst_rna_ori | Orientation of the first partner |
+| sec_rna_ori | Orientation of the second partner |
+| \<sample\>_supp_reads | Number of supporting split reads |
+| \<sample\>_ges | Global energy score |
+| \<sample\>_ghs | Global hybridization score |
+| \<sample\>_pval | P-value (binomial test) |
+| \<sample\>_padj | Benjamini-Hochberg adjusted p-value |
 
-If the option –outcnt is set to 1 RNAnue generates the count table `counts.txt` in the output directory. 
-It contains the counts of each interaction for each sample and  can be used for differential expression 
-analysis. Similarly, –outjgf set to 1 generates a `graph.json` file that contains the detected interactions 
-in JSON graph format. Finally, –stats set to 1 creates a `stats.txt` file that contains basic statistics for 
-each step of the analysis. 
+Additional output options:
+- `--outcnt 1` — generates `counts.txt` (count table for differential expression analysis)
+- `--outjgf 1` — generates `graph.json` (interactions in JSON graph format)
+- `--stats 1` — generates `stats.txt` (basic statistics for each step)
 
-### Docker
-In additon, we provide a ready-to-use [Docker container](https://hub.docker.com/repository/docker/cobirna/rnanue) that 
-has RNAnue preconfigured.
+## Testing
 
-### Singularity
-
-The provided Docker container can also be used with Singularity.
-```
-singularity pull docker://cobirna/rnanue:latest
-singularity exec --bind /path/to/data:/data rnanue_latest.sif RNAnue <subcall> --config /data/params.cfg
+Run the test suite:
+```bash
+./build/RNAnue_tests
 ```
 
-### Testing
+Test data is available in [test/data/](./test/data/).
 
-We provide a test dataset in the [test](./test/data/) folder that can be used to test the installation. 
+## Troubleshooting
 
-# Troubleshooting
-contact cobi@ibvt.uni-stuttgart.de or create an issue
+Please [create an issue](https://github.com/riasc/RNAnue/issues) if you encounter any problems.
