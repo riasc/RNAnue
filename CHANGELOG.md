@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [Unreleased]
+
+## Fixed
+
+- **Pipeline order**: Fixed wrong execution order in `complete` subcall — `detect` was running before `align` (#1, PR #14)
+- **Overlap check**: Fixed tautological condition `p1Start >= p1Start` in `SplitReadCalling::decide()` that caused incorrect overlap filtering (#1, PR #14)
+- **Missing return**: Added missing `return false` in `SplitReadCalling::matchSpliceSites()` to fix undefined behavior (#1, PR #14)
+
 # [0.2.4]
 
 ## Fix
