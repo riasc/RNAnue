@@ -11,16 +11,25 @@ env:
   IMAGE_NAME: riasc/rnanue
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - name: Set build matrix
+        id: set
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo 'matrix=[{"platform":"linux/amd64","runner":"ubuntu-24.04"},{"platform":"linux/arm64","runner":"ubuntu-24.04-arm"}]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=[{"platform":"linux/amd64","runner":"ubuntu-24.04"}]' >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: prepare
     strategy:
       matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-24.04
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    # On PRs, only build amd64 for fast verification
-    if: ${{ github.event_name == 'push' || matrix.platform == 'linux/amd64' }}
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
