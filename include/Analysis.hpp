@@ -11,7 +11,6 @@
 
 // Boost
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/accumulators/accumulators.hpp>
@@ -31,7 +30,7 @@
 using seqan3::operator""_tag;
 
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = boost::property_tree;
 namespace jp = boost::property_tree::json_parser;
 namespace ma = boost::math;

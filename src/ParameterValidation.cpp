@@ -1,30 +1,20 @@
 #include "ParameterValidation.hpp"
+#include "Exceptions.hpp"
 
 ParameterValidation::ParameterValidation(po::variables_map& params) : params(params) {
     if(params["subcall"].as<std::string>().empty()) {
-        std::cout << helper::getTime() << "Please provide a subcall\n";
-        exit(EXIT_FAILURE);
-    } else {
-        // make sure a correct subcall has been provided
-        std::string subcall = params["subcall"].as<std::string>();
-        if(subcall == "preproc") {
-            validatePreproc();
-        } else if (subcall == "align") {
-
-        } else if (subcall == "detect") {
-
-        } else if (subcall == "clustering") {
-
-        } else if (subcall == "analysis") {
-
-        } else {
-            std::cout << helper::getTime() << "Invalid subcall: " << subcall << "\n";
-            exit(EXIT_FAILURE);
-        }
+        throw ValidationError("Please provide a subcall");
     }
 
-    if(params["subcall"].as<std::string>() == "preproc") {
+    std::string subcall = params["subcall"].as<std::string>();
+    if(subcall == "preproc") {
         validatePreproc();
+    } else if (subcall == "align" || subcall == "detect" ||
+               subcall == "clustering" || subcall == "analysis" ||
+               subcall == "complete") {
+        // valid subcalls — no additional validation yet
+    } else {
+        throw ValidationError("Invalid subcall: " + subcall);
     }
 }
 ParameterValidation::~ParameterValidation() {}
@@ -37,8 +27,7 @@ void ParameterValidation::validatePreproc() {
 
 void ParameterValidation::validateDirs(std::string param) {
     if (params[param].as<std::string>().empty()) {
-        std::cout << helper::getTime() << "Please provide a value for --" << param << "\n";
-        exit(EXIT_FAILURE);
+        throw ValidationError("Please provide a value for --" + param);
     } else {
         if (param == "outdir") {
             // check if the output directory already exists

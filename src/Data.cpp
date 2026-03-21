@@ -1,4 +1,7 @@
 #include "Data.hpp"
+#include "Exceptions.hpp"
+
+#include <unordered_map>
 
 Data::Data(po::variables_map params) : params(params) {
     std::string subcall = params["subcall"].as<std::string>();
@@ -11,16 +14,28 @@ Data::Data(po::variables_map params) : params(params) {
     helper::createDir(outSubcallDir, std::cout);
     helper::createDir(outDir / fs::path("tmp"), std::cout);
 
-    // preprocessing
-    if(subcall == "preproc") { preprocDataPrep(); }
-    if(subcall == "align") { alignDataPrep(); }
-    if(subcall == "detect") {
-        fs::path outIBTree = outDir / fs::path("IBPTree");
-        helper::createDir(outIBTree, std::cout);
-        detectDataPrep();
+    // stage source map: maps subcall to its input stage directory
+    static const std::unordered_map<std::string, std::string> stageSource = {
+        {"detect",     "align"},
+        {"clustering", "detect"},
+        {"analysis",   "detect"},
+    };
+
+    if(subcall == "preproc") {
+        rawInputDataPrep();
+    } else if(subcall == "align") {
+        if(params["preproc"].as<std::bitset<1>>() == std::bitset<1>("0")) {
+            std::cout << helper::getTime() << "Skipping preprocessing\n";
+            rawInputDataPrep();
+        } else {
+            stageDataPrep("preproc");
+        }
+    } else if(auto it = stageSource.find(subcall); it != stageSource.end()) {
+        if(subcall == "detect") {
+            helper::createDir(outDir / fs::path("IBPTree"), std::cout);
+        }
+        stageDataPrep(it->second);
     }
-    if(subcall == "clustering") { clusteringDataPrep();}
-    if(subcall == "analysis") { analysisDataPrep(); }
 }
 
 Data::~Data() {
@@ -29,8 +44,7 @@ Data::~Data() {
     helper::deleteDir(tmpDir);
 }
 
-void Data::preprocDataPrep() {
-    // retrieve paths that contain the reads
+void Data::rawInputDataPrep() {
     fs::path ctrlsPath = fs::path(this->params["ctrls"].as<std::string>());
     fs::path trtmsPath = fs::path(this->params["trtms"].as<std::string>());
 
@@ -38,57 +52,12 @@ void Data::preprocDataPrep() {
     getCondition(groups);
 }
 
-void Data::alignDataPrep() {
-    if(params["preproc"].as<std::bitset<1>>() == std::bitset<1>("0")) {
-        std::cout << helper::getTime() << "Skipping preprocessing\n";
-        preprocDataPrep(); // same data collecting as in preprocessing
-    } else {
-        // make sure that data has been preprocessed (or at least selected)
-        if(params["preproc"].as<std::bitset<1>>() == std::bitset<1>("1")) {
-            fs::path ctrlsPath = "";
-            if(params["ctrls"].as<std::string>() != "") {
-                ctrlsPath = fs::path(params["outdir"].as<std::string>()) / "preproc/ctrls";
-            }
-            fs::path trtmsPath = fs::path(params["outdir"].as<std::string>()) / "preproc/trtms";
-
-            /*
-            * trtms -> "/Users/..../trtms"
-            * (ctrls -> "/Users/.../crtls")
-            */
-            GroupsPath groups = getGroupsPath(ctrlsPath, trtmsPath);
-            getCondition(groups);
-        }
+void Data::stageDataPrep(const std::string& sourceStage) {
+    fs::path ctrlsPath;
+    if(!params["ctrls"].as<std::string>().empty()) {
+        ctrlsPath = fs::path(params["outdir"].as<std::string>()) / sourceStage / "ctrls";
     }
-}
-
-void Data::detectDataPrep() {
-    fs::path ctrlsPath = "";
-    if(params["ctrls"].as<std::string>() != "") {
-        ctrlsPath = fs::path(params["outdir"].as<std::string>()) / "align/ctrls";
-    }
-    fs::path trtmsPath = fs::path(params["outdir"].as<std::string>()) / "align/trtms";
-
-    GroupsPath groups = getGroupsPath(ctrlsPath, trtmsPath);
-    getCondition(groups);
-}
-
-void Data::clusteringDataPrep() {
-    fs::path ctrlsPath = "";
-    if(params["ctrls"].as<std::string>() != "") {
-        ctrlsPath = fs::path(params["outdir"].as<std::string>()) / "detect/ctrls";
-    }
-    fs::path trtmsPath = fs::path(params["outdir"].as<std::string>()) / "detect/trtms";
-
-    GroupsPath groups = getGroupsPath(ctrlsPath, trtmsPath);
-    getCondition(groups);
-}
-
-void Data::analysisDataPrep() {
-    fs::path ctrlsPath = "";
-    if(params["ctrls"].as<std::string>() != "") {
-        ctrlsPath = fs::path(params["outdir"].as<std::string>()) / "detect/ctrls";
-    }
-    fs::path trtmsPath = fs::path(params["outdir"].as<std::string>()) / "detect/trtms";
+    fs::path trtmsPath = fs::path(params["outdir"].as<std::string>()) / sourceStage / "trtms";
 
     GroupsPath groups = getGroupsPath(ctrlsPath, trtmsPath);
     getCondition(groups);
@@ -98,8 +67,8 @@ GroupsPath Data::getGroupsPath(fs::path& ctrls, fs::path& trtms) {
     GroupsPath groups;
     std::cout << helper::getTime() << "Retrieve the path that contain the reads\n";
 
-    if(trtms != "") { // '--trtms' has been set in the config file or cmdline
-        if(ctrls != "") { // '--ctrls' has been set in the config or cmdline
+    if(!trtms.empty()) { // '--trtms' has been set in the config file or cmdline
+        if(!ctrls.empty()) { // '--ctrls' has been set in the config or cmdline
             groups.insert(std::make_pair("ctrls", ctrls));
         } else { // '--ctrls' has not been set in either config or cmdline - still continue
             std::cout << helper::getTime() << "### WARNING - '--ctrls' has not been set. ";
@@ -107,8 +76,7 @@ GroupsPath Data::getGroupsPath(fs::path& ctrls, fs::path& trtms) {
         }
         groups.insert(std::make_pair("trtms", trtms));
     } else { // abort - trtms have not been set in either config file or cmdline
-        std::cerr << "### ERROR - RNAnue is aborted! No treatment data specified" << std::endl;
-        exit(EXIT_FAILURE);
+        throw ConfigError("No treatment data specified");
     }
     return groups;
 }
@@ -141,12 +109,10 @@ void Data::getCondition(GroupsPath& groups) {
                 ptGroup.erase("");
 
             } else {
-                std::cout << helper::getTime() << "### ERROR - " << group.second << " is not a directory! ";
-                exit(EXIT_FAILURE);
+                throw FileError(group.second.string() + " is not a directory");
             }
         } else {
-            std::cout << "has not been found in the filesystem! ### ERROR### \n";
-            exit(EXIT_FAILURE);
+            throw FileError(group.second.string() + " has not been found in the filesystem");
         }
     }
 
@@ -212,51 +178,37 @@ pt::ptree Data::getData(std::string group, fs::path& condition) {
 
 int Data::getNumberElements(PathVector& vec) {
     std::string subcall = params["subcall"].as<std::string>();
-    int numberElements;
+    bool isPE = params["readtype"].as<std::string>() == "PE";
 
-    if(subcall == "preproc") { numberElements = (params["readtype"].as<std::string>() == "PE") ? 2 : 1; }
-    if(subcall == "align") { numberElements = (params["readtype"].as<std::string>() == "PE") ? 5 : 1; }
-    if(subcall == "detect") {
-        std::vector<std::string> keys = {"preproc_matched", "R1only_matched", "R2only_matched", "unmerged_matched"};
-        numberElements = 1;
-        // for now only consider preproc_matched
-        // TODO: additional files when unmerged/unfiltered reads are used (paired-end)
-    }
-    if(subcall == "clustering") { numberElements = 3; }
-    if(subcall == "analysis") { numberElements = 3; }
-    return numberElements;
+    if(subcall == "preproc") { return isPE ? 2 : 1; }
+    else if(subcall == "align") { return isPE ? 5 : 1; }
+    else if(subcall == "detect") { return 1; }
+    else if(subcall == "clustering" || subcall == "analysis") { return 3; }
+    return 1;
 }
 
 std::vector<std::string> Data::getSampleKeys() {
     std::string subcall = params["subcall"].as<std::string>();
-    std::vector<std::string> sampleKeys;
-    if(subcall == "preproc") { sampleKeys = {"forward", "reverse"}; }
+    bool isPE = params["readtype"].as<std::string>() == "PE";
 
-    if(subcall == "align") {
-        if(params["readtype"].as<std::string>() == "SE") {
-            sampleKeys = {"forward"};
-        } else {
-            if(params["readtype"].as<std::string>() == "PE") {
-                sampleKeys = {"forward", "R1only", "R1unmerged", "R2only", "R2unmerged"};
-            }
-        }
+    if(subcall == "preproc") { return {"forward", "reverse"}; }
+    else if(subcall == "align") {
+        return isPE ? std::vector<std::string>{"forward", "R1only", "R1unmerged", "R2only", "R2unmerged"}
+                    : std::vector<std::string>{"forward"};
     }
-
-    if(subcall == "detect") { sampleKeys = {"matched"}; }
-    if(subcall == "clustering") { sampleKeys = {"multsplits", "single", "splits"}; }
-    if(subcall == "analysis") { sampleKeys = {"multsplits", "single", "splits"}; }
-    return sampleKeys;
+    else if(subcall == "detect") { return {"matched"}; }
+    else if(subcall == "clustering" || subcall == "analysis") { return {"multsplits", "single", "splits"}; }
+    return {};
 }
 
 pt::ptree Data::getOutputData(pt::ptree& input, fs::path& conditionOutDir) {
     std::string subcall = params["subcall"].as<std::string>();
 
-    pt::ptree output;
-    if(subcall == "preproc") { output = getPreprocOutputData(input, conditionOutDir); }
-    if(subcall == "align") { output = getAlignOutputData(input, conditionOutDir); }
-    if(subcall == "detect") { output = getDetectOutputData(input, conditionOutDir); }
-    if(subcall == "analysis") { output = getAnalysisOutputData(input, conditionOutDir); }
-    return output;
+    if(subcall == "preproc") { return getPreprocOutputData(input, conditionOutDir); }
+    else if(subcall == "align") { return getAlignOutputData(input, conditionOutDir); }
+    else if(subcall == "detect") { return getDetectOutputData(input, conditionOutDir); }
+    else if(subcall == "analysis") { return getAnalysisOutputData(input, conditionOutDir); }
+    return {};
 }
 
 pt::ptree Data::getPreprocOutputData(pt::ptree& input, fs::path& conditionOutDir) {

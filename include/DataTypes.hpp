@@ -1,8 +1,8 @@
 #ifndef RNANUE_DATATYPES_HPP
 #define RNANUE_DATATYPES_HPP
 
-// boost
-#include <boost/filesystem.hpp>
+// Standard
+#include <filesystem>
 
 // seqan3
 #include <seqan3/alphabet/nucleotide/dna5.hpp>
@@ -12,7 +12,7 @@
 #include <seqan3/io/sam_file/all.hpp>
 
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace dtp {
     using PathVector = std::vector<fs::path>;

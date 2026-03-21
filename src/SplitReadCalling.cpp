@@ -1,4 +1,14 @@
 #include "SplitReadCalling.hpp"
+#include "Exceptions.hpp"
+
+using namespace seqan3::literals;
+using seqan3::get;
+
+// RAII wrappers for HTSlib resources
+struct HtsFileDeleter { void operator()(samFile* f) const { if(f) sam_close(f); } };
+struct BamHdrDeleter { void operator()(bam_hdr_t* h) const { if(h) bam_hdr_destroy(h); } };
+using HtsFilePtr = std::unique_ptr<samFile, HtsFileDeleter>;
+using BamHdrPtr = std::unique_ptr<bam_hdr_t, BamHdrDeleter>;
 
 template <typename T>
 SafeQueue<T>::SafeQueue() {}
@@ -443,44 +453,33 @@ void SplitReadCalling::storeSegments(auto& splitrecord, std::optional<int32_t> r
 }
 
 void SplitReadCalling::sort(const std::string& inputFile, const std::string& outputFile) {
-    const char *input = inputFile.c_str();
-    const char *output = outputFile.c_str();
-
-    samFile *in = sam_open(input, "rb"); // open input BAM file
+    HtsFilePtr in(sam_open(inputFile.c_str(), "rb"));
     if (!in) {
-        std::cerr << helper::getTime() << "Failed to open input BAM file " << inputFile << "\n";
-        exit(EXIT_FAILURE);
-    }
-    samFile *out = sam_open(output, "wb");
-    if (!out) {
-        std::cerr << helper::getTime() << "Failed to open output BAM file: " << outputFile << "\n";
-        sam_close((htsFile *) input);
-        exit(EXIT_FAILURE);
+        throw FileError("Failed to open input BAM file: " + inputFile);
     }
 
-    bam_hdr_t *header = sam_hdr_read(in); // load the header
-    if (!header) {
-        std::cerr << helper::getTime() << "Failed to read header from " << inputFile << "\n";
-        sam_close((htsFile *) input);
-        exit(EXIT_FAILURE);
+    HtsFilePtr out(sam_open(outputFile.c_str(), "wb"));
+    if (!out) {
+        throw FileError("Failed to open output BAM file: " + outputFile);
     }
-    if (sam_hdr_write(out, header) < 0) { // write the header
-        std::cerr << helper::getTime() << "Error: Failed to write header to output file " << outputFile << std::endl;
-        bam_hdr_destroy(header);
-        sam_close(in);
-        sam_close(out);
-        exit(EXIT_FAILURE);
+
+    BamHdrPtr header(sam_hdr_read(in.get()));
+    if (!header) {
+        throw FileError("Failed to read header from: " + inputFile);
+    }
+
+    if (sam_hdr_write(out.get(), header.get()) < 0) {
+        throw FileError("Failed to write header to: " + outputFile);
     }
 
     // Read BAM records into a vector
     std::vector<bam1_t*> records;
     bam1_t* b = bam_init1();
-    while (sam_read1(in, header, b) >= 0) {
-        bam1_t* new_record = bam_dup1(b);
-        records.push_back(new_record);
+    while (sam_read1(in.get(), header.get(), b) >= 0) {
+        records.push_back(bam_dup1(b));
     }
     bam_destroy1(b);
-    sam_close(in); // close the input file
+    in.reset(); // close the input file
 
     // sort the records by QNAME
     std::sort(records.begin(), records.end(), [](const bam1_t* a, const bam1_t* b) {
@@ -489,15 +488,12 @@ void SplitReadCalling::sort(const std::string& inputFile, const std::string& out
 
     // Write sorted BAM records to output file
     for (auto rec : records) {
-        if (sam_write1(out, header, rec) < 0) {
+        if (sam_write1(out.get(), header.get(), rec) < 0) {
             std::cerr << "Error writing BAM record to output file" << std::endl;
             break;
         }
         bam_destroy1(rec);
     }
-    // Clean up
-    bam_hdr_destroy(header);
-    sam_close(out);
 }
 
 
