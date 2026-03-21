@@ -1,4 +1,5 @@
 #include "IBPTree.hpp"
+#include "Exceptions.hpp"
 
 IBPTree::IBPTree(po::variables_map params, int k) : params(params) {
     this->rootnodes = std::map<std::string, Node*>();
@@ -26,8 +27,7 @@ void IBPTree::iterateFeatures(std::string featuresFile) {
     // iterate over features
     std::ifstream gff(featuresFile);
     if(!gff) {
-        std::cout << helper::getTime() << "Annotation file " << featuresFile << " could not be opened!\n";
-        EXIT_FAILURE;
+        throw FileError("Annotation file " + featuresFile + " could not be opened");
     }
 
     // null pointer
@@ -102,8 +102,7 @@ void IBPTree::iterateFeatures(std::string featuresFile) {
 void IBPTree::iterateClusters(std::string clusterFile) {
     std::ifstream clusters(clusterFile);
     if(!clusters) {
-        std::cout << helper::getTime() << " Cluster file " << clusterFile << " could not be opened!\n";
-        EXIT_FAILURE;
+        throw FileError("Cluster file " + clusterFile + " could not be opened");
     }
 
     IntervalData* firstSegment = nullptr;
