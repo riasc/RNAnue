@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docker CI**: Fixed workflow to build-only on PRs instead of attempting to push, and fixed deprecated `::set-output` syntax (PR #15)
 - **Dockerfile**: Updated base image from Ubuntu 23.04 (EOL) to 24.04 LTS (PR #15)
 
+## Refactored
+
+- **DataPrep consolidation**: Collapsed 5 near-identical `*DataPrep()` methods into 2 parameterized methods (`rawInputDataPrep`, `stageDataPrep`) (#3, PR #16)
+- **Dispatch chains**: Replaced deeply nested if/else subcall dispatch with flat if/else-if chains and map lookup (#3, PR #16)
+- **Namespace pollution**: Moved `using namespace seqan3::literals` from headers to `.cpp` files (#3, PR #16)
+- **Filesystem migration**: Replaced `boost::filesystem` with `std::filesystem` across all source files, removed `Boost::filesystem` CMake dependency (#3, PR #16)
+- **Error handling**: Replaced all `exit(EXIT_FAILURE)` calls with custom exception hierarchy (`ConfigError`/`FileError`/`ValidationError`), added RAII wrappers for HTSlib resources (#3, PR #16)
+
+## Fixed
+
+- **Test UB**: Fixed missing return in `compareFiles()` test helper (declared `bool`, returned nothing) that caused SIGTRAP in debug builds (PR #16)
+
 ## Changed
 
 - **README**: Revised with updated URLs, corrected build instructions, complete dependency list, and missing subcall/tag documentation (PR #15)

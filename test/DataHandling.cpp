@@ -19,7 +19,7 @@
 namespace po = boost::program_options;
 namespace fs = std::filesystem;
 
-bool compareFiles(const fs::path& p1, const fs::path& p2) {
+void compareFiles(const fs::path& p1, const fs::path& p2) {
     std::ifstream ifs1(p1.string());
     std::ifstream ifs2(p2.string());
 
