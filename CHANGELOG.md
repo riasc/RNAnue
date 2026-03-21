@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+- **Docker CI**: Replaced QEMU cross-compilation with native ARM runners (`ubuntu-24.04-arm`), amd64-only on PRs, parallel native builds + manifest push on tags (PR #17)
 - **README**: Revised with updated URLs, corrected build instructions, complete dependency list, and missing subcall/tag documentation (PR #15)
 
 # [0.2.4]
