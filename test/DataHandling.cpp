@@ -9,7 +9,7 @@
 #define BOOST_THROW_EXCEPTIONS
 #include <boost/test/unit_test.hpp>
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 // Class
 #include "Base.hpp"
@@ -17,9 +17,9 @@
 
 // namespace
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
-bool compareFiles(const fs::path& p1, const fs::path& p2) {
+void compareFiles(const fs::path& p1, const fs::path& p2) {
     std::ifstream ifs1(p1.string());
     std::ifstream ifs2(p2.string());
 

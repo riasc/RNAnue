@@ -7,13 +7,13 @@
 #include <vector>
 #include <mutex>
 
-// Boost
-#include <boost/filesystem.hpp>
+// Standard
+#include <filesystem>
 
 // Class
 #include "DataTypes.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 class Stats {
     public:

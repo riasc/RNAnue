@@ -12,8 +12,6 @@
 #include <seqan3/utility/views/pairwise_combine.hpp>
 #include <seqan3/alphabet/nucleotide/dna4.hpp>
 
-using namespace seqan3::literals;
-
 class Complementarity {
     public:
         Complementarity();

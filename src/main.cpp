@@ -12,6 +12,7 @@
 #include "Base.hpp"
 #include "Closing.hpp"
 #include "Config.hpp"
+#include "Exceptions.hpp"
 #include "Utility.hpp"
 
 namespace po = boost::program_options;
@@ -173,8 +174,7 @@ int main(int argc, char* argv[]) {
 
         // check if subcall is empty
         if(params["subcall"].empty()) {
-            std::cout << helper::getTime() << "Please provide a subcall\n";
-            exit(EXIT_FAILURE);
+            throw ConfigError("Please provide a subcall");
         }
         showVersion(std::cout);
 
@@ -200,7 +200,15 @@ int main(int argc, char* argv[]) {
         }
         Base base(params);
 
-    } catch(po::error& e) {
+    } catch(const RNAnueError& e) {
         std::cerr << "ERROR: " << e.what() << "\n";
+        return EXIT_FAILURE;
+    } catch(const po::error& e) {
+        std::cerr << "ERROR: " << e.what() << "\n";
+        return EXIT_FAILURE;
+    } catch(const std::exception& e) {
+        std::cerr << "ERROR: " << e.what() << "\n";
+        return EXIT_FAILURE;
     }
+    return 0;
 }

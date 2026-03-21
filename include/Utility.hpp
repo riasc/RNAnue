@@ -8,8 +8,8 @@
 #include <random>
 
 
-// Boost
-#include <boost/filesystem.hpp>
+// Standard
+#include <filesystem>
 
 // SeqAn3
 #include <seqan3/io/sequence_file/all.hpp>
@@ -17,7 +17,7 @@
 // Class
 #include "DataTypes.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 // filesystem manipulation
 namespace helper {

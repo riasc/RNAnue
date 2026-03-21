@@ -8,7 +8,6 @@
 // Boost
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/filesystem.hpp>
 
 // SeqAn3
 #include <seqan3/core/debug_stream.hpp>
@@ -20,7 +19,7 @@
 
 namespace po = boost::program_options;
 namespace pt = boost::property_tree;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 struct Segment {
     std::string refid;

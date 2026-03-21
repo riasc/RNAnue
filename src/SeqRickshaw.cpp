@@ -1,4 +1,5 @@
 #include "SeqRickshaw.hpp"
+#include "Exceptions.hpp"
 
 SeqRickshaw::SeqRickshaw(po::variables_map params) {
     this->params = params;
@@ -35,8 +36,7 @@ SeqRickshaw::SeqRickshaw(po::variables_map params) {
         }
     }
     catch (seqan3::file_open_error& err) {
-        std::cout << err.what() << std::endl;
-        exit(EXIT_FAILURE);
+        throw FileError(std::string("Failed to open adapter file: ") + err.what());
     }
     catch (std::exception& e) {
         std::cout << e.what() << std::endl;

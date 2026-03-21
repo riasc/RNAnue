@@ -6,13 +6,13 @@
 
 // Boost
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 // Class
 #include "Utility.hpp"
 
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 class ParameterValidation {
     public:

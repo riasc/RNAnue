@@ -1,5 +1,7 @@
 #include "FilterScores.hpp"
 
+using namespace seqan3::literals;
+
 struct complMatch : public std::true_type {
     int operator()(seqan3::dna5_vector::value_type a, seqan3::dna5_vector::value_type b) {
         if(a == seqan3::complement(b)) {
