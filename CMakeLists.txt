@@ -34,6 +34,7 @@ target_link_libraries(RNAnue PkgConfig::HTSLIB)
 cmake_print_properties(TARGETS RNAnue PROPERTIES TARGET_INCLUDE_DIRECTORIES)
 
 ###### Tests ######
+enable_testing()
 include(FetchContent)
 FetchContent_Declare(
     googletest
