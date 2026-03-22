@@ -524,8 +524,6 @@ TracebackResult SplitReadCalling::complementarity(dtp::DNASpan& seq1, dtp::DNASp
         }
     }
 
-//    printMatrix(matrix); // print matrix
-    freeMatrix(&matrix);
     if(idx != -1) {
         return res[idx];
     } else {
