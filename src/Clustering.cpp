@@ -86,7 +86,7 @@ void Clustering::sumup() {
             outputFile << result[i].elements[0].end << "\t";
 
             outputFile << result[i].elements[1].refid << "\t";
-            if(!static_cast<bool>(result[i].elements[0].flag & seqan3::sam_flag::on_reverse_strand)) {
+            if(!static_cast<bool>(result[i].elements[1].flag & seqan3::sam_flag::on_reverse_strand)) {
                 outputFile << "+" << "\t";
             } else {
                 outputFile << "-" << "\t";
@@ -116,9 +116,6 @@ void Clustering::overlaps(std::vector<Cluster> &clusterlist) {
 
     int clustdist = params["clustdist"].as<int>();
 
-    uint32_t s1Start, s1End, s2Start, s2End;
-    uint32_t xs1Start, xs1End, xs2Start, xs2End;
-
     for(unsigned i=0;i<clusterlist.size();++i) {
         for(unsigned j=i+1; j<clusterlist.size();++j) {
             // check if the next cluster is too far away
@@ -138,11 +135,11 @@ void Clustering::overlaps(std::vector<Cluster> &clusterlist) {
 
             // checks if the first overlaps
             if((xs1Start <= s1End + clustdist) && (xs1Start >= s1Start - clustdist)) {
-                if((s2Start >= xs2Start - clustdist) && (s2Start <= xs2End + clustdist) ||
-                     (xs2Start >= s2Start - clustdist) && (xs2Start <= s2End + clustdist)) {
+                if(((s2Start >= xs2Start - clustdist) && (s2Start <= xs2End + clustdist)) ||
+                   ((xs2Start >= s2Start - clustdist) && (xs2Start <= s2End + clustdist))) {
                     // refid needs to match
                     if((clusterlist[i].elements[0].refid == clusterlist[j].elements[0].refid) &&
-                       (clusterlist[i].elements[0].refid == clusterlist[j].elements[0].refid)) {
+                       (clusterlist[i].elements[1].refid == clusterlist[j].elements[1].refid)) {
                         // same with strand
                         if((clusterlist[i].elements[0].flag == clusterlist[j].elements[0].flag) &&
                            (clusterlist[i].elements[1].flag == clusterlist[j].elements[1].flag)) {
