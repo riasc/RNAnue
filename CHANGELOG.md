@@ -31,8 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Test UB**: Fixed missing return in `compareFiles()` test helper (declared `bool`, returned nothing) that caused SIGTRAP in debug builds (PR #16)
 
+## Added
+
+- **ScoringMatrix tests**: 8 new tests for complementarity scoring, traceback, edge cases ([#5](https://github.com/riasc/RNAnue/issues/5), [#20](https://github.com/riasc/RNAnue/pull/20))
+- **Ubuntu CI**: Build+test workflow for GCC 12/13/14 × Debug/Release ([#20](https://github.com/riasc/RNAnue/pull/20))
+
 ## Changed
 
+- **Test framework**: Switched from Boost.Test to GoogleTest via FetchContent, renamed `test/` to `tests/`, made DataHandling tests path-independent ([#20](https://github.com/riasc/RNAnue/pull/20))
 - **Docker CI**: Replaced QEMU cross-compilation with native ARM runners (`ubuntu-24.04-arm`), amd64-only on PRs, parallel native builds + manifest push on tags (PR #17)
 - **README**: Revised with updated URLs, corrected build instructions, complete dependency list, and missing subcall/tag documentation (PR #15)
 
