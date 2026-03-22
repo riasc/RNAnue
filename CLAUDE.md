@@ -15,11 +15,11 @@ cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make
 # Debug build
 cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make
 
-# Run tests (Boost.Test)
+# Run tests (GoogleTest)
 ./build/RNAnue_tests
 
-# Run a single test by name
-./build/RNAnue_tests --run_test=DataHandlingPreprocSE
+# Run tests matching a filter
+./build/RNAnue_tests --gtest_filter="ScoringMatrix.*"
 ```
 
 ## Dependencies
@@ -27,7 +27,8 @@ cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make
 - **CMake** >= 3.22.1
 - **C++20** standard required
 - **SeqAn3** (v3.3.0) - expected at `./seqan3/` in repo root
-- **Boost** >= 1.56.0 (program_options, filesystem, unit_test_framework)
+- **Boost** >= 1.56.0 (program_options)
+- **GoogleTest** (v1.15.2) - fetched automatically via CMake FetchContent
 - **HTSlib** - found via pkg-config
 - **Segemehl** (v0.3.4) - must be in `$PATH` (external aligner invoked at runtime)
 - **ViennaRNA** - must be in `$PATH` (hybridization energy calculations)
@@ -76,7 +77,15 @@ ctrls/           # optional
 
 ## Tests
 
-Tests use Boost.Test (`test/DataHandling.cpp`). Test data lives in `test/data/`. The test executable is `RNAnue_tests`, built alongside the main binary by CMake.
+Tests use GoogleTest (fetched via CMake `FetchContent`). Test files live in `tests/`, test data in `tests/data/`. The test executable is `RNAnue_tests`, built alongside the main binary by CMake.
+
+```bash
+# Run all tests
+./build/RNAnue_tests
+
+# Run tests matching a filter
+./build/RNAnue_tests --gtest_filter="ScoringMatrix.*"
+```
 
 ## Docker
 

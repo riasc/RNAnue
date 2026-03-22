@@ -14,8 +14,7 @@ find_package (seqan3 3.3 REQUIRED)
 
 ###### Boost ######
 set(Boost_DEBUG ON)
-find_package(Boost 1.56.0 REQUIRED COMPONENTS
-        program_options unit_test_framework)
+find_package(Boost 1.56.0 REQUIRED COMPONENTS program_options)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
@@ -31,18 +30,29 @@ target_include_directories(RNAnue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(RNAnue seqan3::seqan3)
 target_link_libraries(RNAnue Boost::program_options)
 target_link_libraries(RNAnue PkgConfig::HTSLIB)
-#target_link_libraries(RNAnue -L/usr/local/include/ -lRNA)
 
 cmake_print_properties(TARGETS RNAnue PROPERTIES TARGET_INCLUDE_DIRECTORIES)
 
 ###### Tests ######
-file(GLOB TEST_SOURCES "test/*.cpp")
+enable_testing()
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+)
+FetchContent_MakeAvailable(googletest)
+
+file(GLOB TEST_SOURCES "tests/*.cpp")
 file(GLOB SOURCES "src/*.cpp")
 list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 add_executable(RNAnue_tests ${TEST_SOURCES} ${SOURCES})
 target_include_directories(RNAnue_tests PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(RNAnue_tests seqan3::seqan3)
-target_link_libraries(RNAnue_tests Boost::program_options Boost::unit_test_framework)
+target_link_libraries(RNAnue_tests Boost::program_options)
 target_link_libraries(RNAnue_tests PkgConfig::HTSLIB)
+target_link_libraries(RNAnue_tests GTest::gtest_main)
 
+include(GoogleTest)
+gtest_discover_tests(RNAnue_tests)

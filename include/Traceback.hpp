@@ -1,23 +1,21 @@
 #ifndef RNANUE_TRACEBACK_HPP
 #define RNANUE_TRACEBACK_HPP
 
-// Standard
+#include <string>
 #include <vector>
 
-// Class
 #include "ScoringMatrix.hpp"
 
-typedef struct {
+struct TracebackResult {
     std::string a;
     std::string b;
     int length;
     int matches;
     int score;
-    double cmpl; // complementarity
-    double ratio; // sitelenratio
-} TracebackResult;
+    double cmpl;
+    double ratio;
+};
 
-std::vector<TracebackResult> traceback(ScoringMatrix matrix, const char *a, const char *b);
-void free_traceback(TracebackResult trc);
+std::vector<TracebackResult> traceback(const ScoringMatrix& matrix, const char *a, const char *b);
 
 #endif //RNANUE_TRACEBACK_HPP
