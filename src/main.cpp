@@ -167,9 +167,16 @@ int main(int argc, char* argv[]) {
 
         Closing cl;
 
+        if(params.count("version")) {
+            showVersion(std::cout);
+            cl.printQuote(std::cout);
+            return 0;
+        }
+
         if(params.count("help")) {
             std::cout << cmdlineOptions << "\n";
             cl.printQuote(std::cout);
+            return 0;
         }
 
         // check if subcall is empty
@@ -177,15 +184,6 @@ int main(int argc, char* argv[]) {
             throw ConfigError("Please provide a subcall");
         }
         showVersion(std::cout);
-
-        // include parameters from the configfile
-        std::ifstream ifs{configFile};
-
-        if(params.count("version")) {
-            showVersion(std::cout);
-            cl.printQuote(std::cout);
-            return 0;
-        }
 
         if(!configFile.empty()) { // check that a config file has been provided
             std::ifstream ifs{configFile};

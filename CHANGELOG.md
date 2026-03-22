@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Missing return**: Added missing `return false` in `SplitReadCalling::matchSpliceSites()` to fix undefined behavior (#1, PR #14)
 - **Docker CI**: Fixed workflow to build-only on PRs instead of attempting to push, and fixed deprecated `::set-output` syntax (PR #15)
 - **Dockerfile**: Updated base image from Ubuntu 23.04 (EOL) to 24.04 LTS (PR #15)
+- **IBPTree silent failure**: Bare `EXIT_FAILURE;` statements were no-ops — replaced with `throw FileError` ([#13](https://github.com/riasc/RNAnue/issues/13), [#18](https://github.com/riasc/RNAnue/pull/18))
+- **Version flag**: `--version` and `--help` now work without providing a subcall ([#13](https://github.com/riasc/RNAnue/issues/13), [#18](https://github.com/riasc/RNAnue/pull/18))
 
 ## Refactored
 
