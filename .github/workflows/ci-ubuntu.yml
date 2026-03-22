@@ -1,0 +1,53 @@
+name: CI (Ubuntu)
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    name: ubuntu-24.04-${{ matrix.c_compiler }}-${{ matrix.build_type }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        c_compiler: [gcc-12, gcc-13, gcc-14]
+        include:
+          - c_compiler: gcc-12
+            cpp_compiler: g++-12
+          - c_compiler: gcc-13
+            cpp_compiler: g++-13
+          - c_compiler: gcc-14
+            cpp_compiler: g++-14
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install compilers and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-12 g++-12 gcc-13 g++-13 gcc-14 g++-14
+          sudo apt-get install -y libboost-program-options-dev libhts-dev pkg-config
+
+      - name: Download SeqAn3
+        run: |
+          curl -L https://github.com/seqan/seqan3/releases/download/3.3.0/seqan3-3.3.0-Source.tar.xz -o seqan3.tar.xz
+          tar -xf seqan3.tar.xz
+          mv seqan3-3.3.0-Source seqan3
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure

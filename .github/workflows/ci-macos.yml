@@ -1,0 +1,42 @@
+name: CI (macOS)
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    name: macos-${{ matrix.os }}-${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+        build_type: [Debug, Release]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install boost htslib pkg-config
+
+      - name: Download SeqAn3
+        run: |
+          curl -L https://github.com/seqan/seqan3/releases/download/3.3.0/seqan3-3.3.0-Source.tar.xz -o seqan3.tar.xz
+          tar -xf seqan3.tar.xz
+          mv seqan3-3.3.0-Source seqan3
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
