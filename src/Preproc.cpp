@@ -1,5 +1,7 @@
 #include "Preproc.hpp"
 
+#include <atomic>
+
 // constructor to process single-end reads
 Preproc::Preproc(po::variables_map& params, StateTransition& adpt5Tables, StateTransition& adpt3Tables)
     : params(params), adpt5Tables(adpt5Tables), adpt3Tables(adpt3Tables) {
@@ -21,7 +23,7 @@ void Preproc::processing(fs::path& in, fs::path& out) {
     seqan3::sequence_file_input fin{in.string()};
     seqan3::sequence_file_output fout{out.string()};
 
-    int readcount = 0;
+    std::atomic<int> readcount{0};
     auto reads = fin | seqan3::views::async_input_buffer(100);
     auto worker = [&]()
     {
@@ -84,7 +86,7 @@ void Preproc::processing(fs::path& inFwd, fs::path& outFwd, fs::path& inRev, fs:
 
     std::mutex outMutex, progressMutex;
 
-    int readcount = 0;
+    std::atomic<int> readcount{0};
     auto inFwdSeqBuf = inFwdSeq | seqan3::views::async_input_buffer(100);
     auto inRevSeqBuf = inRevSeq | seqan3::views::async_input_buffer(100);
     auto worker = [&]() {
@@ -110,7 +112,7 @@ void Preproc::processing(fs::path& inFwd, fs::path& outFwd, fs::path& inRev, fs:
             std::pair<size_t, size_t> bndsRev = trimReads(seqRev);
             if (params["wtrim"].as<std::bitset<1>>() == std::bitset<1>("1")) {
                 bndsFwd.second = nibble(qualFwd, bndsFwd);
-                bndsFwd.second = nibble(qualRev, bndsRev);
+                bndsRev.second = nibble(qualRev, bndsRev);
             }
 
             // retrieve trimmed sequences
@@ -125,7 +127,7 @@ void Preproc::processing(fs::path& inFwd, fs::path& outFwd, fs::path& inRev, fs:
 
             // perform filtering (quality and length)
             bool fwdFilter = filterReads(trmQualFwd);
-            bool revFilter = filterReads(trmQualFwd);
+            bool revFilter = filterReads(trmQualRev);
 
             if(fwdFilter && revFilter) {
                 std::pair<dtp::DNAVector, dtp::QualVector> merged = mergeReads(trmSeqFwd, trmQualFwd,

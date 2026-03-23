@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clustering bugs**: Fixed wrong strand flag for second segment, duplicate refid comparison, operator precedence in overlap check, and removed shadowed variables ([#10](https://github.com/riasc/RNAnue/issues/10), [#19](https://github.com/riasc/RNAnue/pull/19))
 - **ScoringMatrix memory**: Replaced C-style malloc/calloc/free with RAII vectors, fixed inner-loop heap allocation leak, replaced nested `std::map` scoring lookup with `switch` ([#5](https://github.com/riasc/RNAnue/issues/5), [#20](https://github.com/riasc/RNAnue/pull/20))
 - **IBPTree leaks and crash**: Added destructor to free all nodes and intervals, fixed `search()` segfault on unknown chromosome, initialized uninitialized pointer ([#6](https://github.com/riasc/RNAnue/issues/6), [#21](https://github.com/riasc/RNAnue/pull/21))
+- **Paired-end preprocessing**: Fixed reverse read quality never checked, window trimming overwriting forward boundary instead of reverse, and data race on read counter ([#9](https://github.com/riasc/RNAnue/issues/9), [#22](https://github.com/riasc/RNAnue/pull/22))
 
 ## Refactored
 
