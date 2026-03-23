@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <queue>
+#include <set>
 #include <string>
 
 // Boost
@@ -54,6 +55,10 @@ class IBPTree {
         // tree structure for each chromosome
         RootNodes rootnodes; // generate a tree for each chromosome
         int order; // order of the IBPTree
+
+        // cleanup helpers
+        void collectIntervals(Node* node, std::set<IntervalData*>& intervals);
+        void deleteNodes(Node* node);
 };
 
 #endif //RNANUE_IBTREE_HPP

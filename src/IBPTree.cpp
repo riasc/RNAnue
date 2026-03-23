@@ -15,7 +15,41 @@ IBPTree::IBPTree(po::variables_map params, int k) : params(params) {
 }
 
 IBPTree::IBPTree() {}
-IBPTree::~IBPTree() {}
+
+IBPTree::~IBPTree() {
+    // Collect all IntervalData* from leaf nodes to avoid double-free
+    // (circular split pointers and shared references across keys)
+    std::set<IntervalData*> intervals;
+    for(auto& [chrom, root] : rootnodes) {
+        if(root) collectIntervals(root, intervals);
+    }
+    for(auto* intvl : intervals) {
+        delete intvl;
+    }
+    for(auto& [chrom, root] : rootnodes) {
+        if(root) deleteNodes(root);
+    }
+}
+
+void IBPTree::collectIntervals(Node* node, std::set<IntervalData*>& intervals) {
+    for(auto& [interval, data] : node->keys) {
+        if(data) intervals.insert(data);
+    }
+    if(!node->isLeaf) {
+        for(auto* child : node->children) {
+            collectIntervals(child, intervals);
+        }
+    }
+}
+
+void IBPTree::deleteNodes(Node* node) {
+    if(!node->isLeaf) {
+        for(auto* child : node->children) {
+            deleteNodes(child);
+        }
+    }
+    delete node;
+}
 
 // constructs the IBPTree (either from annotations/clusters or both)
 void IBPTree::construct() {
@@ -195,8 +229,8 @@ void IBPTree::iterateClusters(std::string clusterFile) {
 }
 
 Node* IBPTree::getRoot(IntervalData& data) {
-    Node* root;
-    if(this->rootnodes.find(data.getChrom()) == this->rootnodes.end()) { // chrom-tree is emptry (create new rootnode)
+    Node* root = nullptr;
+    if(this->rootnodes.find(data.getChrom()) == this->rootnodes.end()) {
         root = new Node(this->order);
         root->isLeaf = true;
         this->rootnodes.insert(std::make_pair(data.getChrom(), root));
@@ -259,7 +293,9 @@ void IBPTree::splitNode(Node* parent, int index) {
 }
 
 std::vector<std::pair<Node*, IntervalData*>> IBPTree::search(std::string chrom, dtp::Interval interval) {
-    Node* root = this->rootnodes[chrom]; // search for the root node
+    auto it = this->rootnodes.find(chrom);
+    if(it == this->rootnodes.end()) { return {}; }
+    Node* root = it->second;
     std::vector<std::pair<Node*, IntervalData*>> result;
     searchIter(root, interval, result);
 
