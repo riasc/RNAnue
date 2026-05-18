@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 
+# [0.3.0] - 2026-05-17
+
+First release under `riasc/RNAnue`. Includes the results of a full C++ quality audit (42 findings) and the bug fixes, refactors, and infrastructure work completed since v0.2.4.
+
 ## Fixed
 
 - **Pipeline order**: Fixed wrong execution order in `complete` subcall — `detect` was running before `align` (#1, PR #14)
@@ -14,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Missing return**: Added missing `return false` in `SplitReadCalling::matchSpliceSites()` to fix undefined behavior (#1, PR #14)
 - **Docker CI**: Fixed workflow to build-only on PRs instead of attempting to push, and fixed deprecated `::set-output` syntax (PR #15)
 - **Dockerfile**: Updated base image from Ubuntu 23.04 (EOL) to 24.04 LTS (PR #15)
+- **Test UB**: Fixed missing return in `compareFiles()` test helper (declared `bool`, returned nothing) that caused SIGTRAP in debug builds (PR #16)
 - **IBPTree silent failure**: Bare `EXIT_FAILURE;` statements were no-ops — replaced with `throw FileError` ([#13](https://github.com/riasc/RNAnue/issues/13), [#18](https://github.com/riasc/RNAnue/pull/18))
 - **Version flag**: `--version` and `--help` now work without providing a subcall ([#13](https://github.com/riasc/RNAnue/issues/13), [#18](https://github.com/riasc/RNAnue/pull/18))
 - **Clustering bugs**: Fixed wrong strand flag for second segment, duplicate refid comparison, operator precedence in overlap check, and removed shadowed variables ([#10](https://github.com/riasc/RNAnue/issues/10), [#19](https://github.com/riasc/RNAnue/pull/19))
@@ -28,10 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Namespace pollution**: Moved `using namespace seqan3::literals` from headers to `.cpp` files (#3, PR #16)
 - **Filesystem migration**: Replaced `boost::filesystem` with `std::filesystem` across all source files, removed `Boost::filesystem` CMake dependency (#3, PR #16)
 - **Error handling**: Replaced all `exit(EXIT_FAILURE)` calls with custom exception hierarchy (`ConfigError`/`FileError`/`ValidationError`), added RAII wrappers for HTSlib resources (#3, PR #16)
-
-## Fixed
-
-- **Test UB**: Fixed missing return in `compareFiles()` test helper (declared `bool`, returned nothing) that caused SIGTRAP in debug builds (PR #16)
 
 ## Added
 
