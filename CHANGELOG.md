@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 
 - **`SplitReadCalling::sort()` BAM record leaks**: Wrapped `bam1_t*` records in a `BamRecPtr` RAII type so all records are freed on scope exit, including when an exception is thrown or a write fails. Replaced the silent `std::cerr` + `break` on `sam_write1` failure with a `FileError` throw so I/O errors surface instead of producing a truncated sorted BAM ([#7](https://github.com/riasc/RNAnue/issues/7))
+- **`hybridization()` shell injection and perf**: Replaced the `popen("echo '... &...' | RNAcofold")` shell call with the ViennaRNA C API (`vrna_fold_compound` + `vrna_mfe_dimer`). Eliminates the shell injection surface, removes one fork/exec per read pair, and drops fragile regex-based output parsing. Wired ViennaRNA into CMake via `pkg_check_modules(RNAlib2)`; CI installs `librna-dev` ([#2](https://github.com/riasc/RNAnue/issues/2))
 
 # [0.3.0] - 2026-05-17
 
