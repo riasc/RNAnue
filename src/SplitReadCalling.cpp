@@ -7,8 +7,10 @@ using seqan3::get;
 // RAII wrappers for HTSlib resources
 struct HtsFileDeleter { void operator()(samFile* f) const { if(f) sam_close(f); } };
 struct BamHdrDeleter { void operator()(bam_hdr_t* h) const { if(h) bam_hdr_destroy(h); } };
+struct BamRecDeleter { void operator()(bam1_t* b) const { if(b) bam_destroy1(b); } };
 using HtsFilePtr = std::unique_ptr<samFile, HtsFileDeleter>;
 using BamHdrPtr = std::unique_ptr<bam_hdr_t, BamHdrDeleter>;
+using BamRecPtr = std::unique_ptr<bam1_t, BamRecDeleter>;
 
 template <typename T>
 SafeQueue<T>::SafeQueue() {}
@@ -473,26 +475,26 @@ void SplitReadCalling::sort(const std::string& inputFile, const std::string& out
     }
 
     // Read BAM records into a vector
-    std::vector<bam1_t*> records;
-    bam1_t* b = bam_init1();
-    while (sam_read1(in.get(), header.get(), b) >= 0) {
-        records.push_back(bam_dup1(b));
+    std::vector<BamRecPtr> records;
+    BamRecPtr b(bam_init1());
+    if (!b) {
+        throw FileError("Failed to allocate BAM record buffer");
     }
-    bam_destroy1(b);
+    while (sam_read1(in.get(), header.get(), b.get()) >= 0) {
+        records.emplace_back(bam_dup1(b.get()));
+    }
     in.reset(); // close the input file
 
     // sort the records by QNAME
-    std::sort(records.begin(), records.end(), [](const bam1_t* a, const bam1_t* b) {
-        return strcmp(bam_get_qname(a), bam_get_qname(b)) < 0;
+    std::sort(records.begin(), records.end(), [](const BamRecPtr& a, const BamRecPtr& b) {
+        return strcmp(bam_get_qname(a.get()), bam_get_qname(b.get())) < 0;
     });
 
     // Write sorted BAM records to output file
-    for (auto rec : records) {
-        if (sam_write1(out.get(), header.get(), rec) < 0) {
-            std::cerr << "Error writing BAM record to output file" << std::endl;
-            break;
+    for (const auto& rec : records) {
+        if (sam_write1(out.get(), header.get(), rec.get()) < 0) {
+            throw FileError("Failed to write BAM record to: " + outputFile);
         }
-        bam_destroy1(rec);
     }
 }
 

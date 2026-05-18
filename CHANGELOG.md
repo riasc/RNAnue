@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 
+## Fixed
+
+- **`SplitReadCalling::sort()` BAM record leaks**: Wrapped `bam1_t*` records in a `BamRecPtr` RAII type so all records are freed on scope exit, including when an exception is thrown or a write fails. Replaced the silent `std::cerr` + `break` on `sam_write1` failure with a `FileError` throw so I/O errors surface instead of producing a truncated sorted BAM ([#7](https://github.com/riasc/RNAnue/issues/7))
+
 # [0.3.0] - 2026-05-17
 
 First release under `riasc/RNAnue`. Includes the results of a full C++ quality audit (42 findings) and the bug fixes, refactors, and infrastructure work completed since v0.2.4.
