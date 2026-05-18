@@ -26,7 +26,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends \
         build-essential \
+        gcc-12 g++-12 \
+        gcc-13 g++-13 \
+        gcc-14 g++-14 \
         cmake \
+        ninja-build \
         curl \
         git \
         gdb \
