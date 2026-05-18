@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 
+# [0.3.1] - 2026-05-18
+
+Patch release on top of v0.3.0. Closes two C++ audit findings (#7 and #2 part 1) and replaces the shell-based ViennaRNA invocation with a direct C library call. Build-system change for downstream packagers: RNAnue now links against `libRNA` (ViennaRNA) via `pkg-config` (`RNAlib2.pc`) instead of shelling out to `RNAcofold` at runtime.
+
 ## Fixed
 
-- **`SplitReadCalling::sort()` BAM record leaks**: Wrapped `bam1_t*` records in a `BamRecPtr` RAII type so all records are freed on scope exit, including when an exception is thrown or a write fails. Replaced the silent `std::cerr` + `break` on `sam_write1` failure with a `FileError` throw so I/O errors surface instead of producing a truncated sorted BAM ([#7](https://github.com/riasc/RNAnue/issues/7))
-- **`hybridization()` shell injection and perf**: Replaced the `popen("echo '... &...' | RNAcofold")` shell call with the ViennaRNA C API (`vrna_fold_compound` + `vrna_mfe_dimer`). Eliminates the shell injection surface, removes one fork/exec per read pair, and drops fragile regex-based output parsing. Wired ViennaRNA into CMake via `pkg_check_modules(RNAlib2)`; Ubuntu CI builds ViennaRNA 2.6.4 from source with `--without-swig --without-doc --without-tutorial` and caches the install tree ([#2](https://github.com/riasc/RNAnue/issues/2), [#28](https://github.com/riasc/RNAnue/pull/28))
+- **`SplitReadCalling::sort()` BAM record leaks**: Wrapped `bam1_t*` records in a `BamRecPtr` RAII type so all records are freed on scope exit, including when an exception is thrown or a write fails. Replaced the silent `std::cerr` + `break` on `sam_write1` failure with a `FileError` throw so I/O errors surface instead of producing a truncated sorted BAM ([#7](https://github.com/riasc/RNAnue/issues/7), [PR #25](https://github.com/riasc/RNAnue/pull/25))
+- **`hybridization()` shell injection and perf**: Replaced the `popen("echo '... &...' | RNAcofold")` shell call with the ViennaRNA C API (`vrna_fold_compound` + `vrna_mfe_dimer`). Eliminates the shell-injection surface, removes one fork/exec per read pair (significant perf win on the multithreaded `detect` pipeline), and drops fragile regex-based output parsing. Wired ViennaRNA into CMake via `pkg_check_modules(RNAlib2)`; Ubuntu CI builds ViennaRNA 2.6.4 from source with `--without-swig --without-doc --without-tutorial` and caches the install tree ([#2](https://github.com/riasc/RNAnue/issues/2), [PR #28](https://github.com/riasc/RNAnue/pull/28))
+
+## Changed
+
+- **CI matrix**: build only `Debug` on PRs and only `Release` on master pushes (was building both on every event), cutting matrix size in half. `docker.yml` drops the `pull_request` trigger; image build runs on master pushes and tag pushes only, registry push remains tag-gated via `startsWith(github.ref, 'refs/tags/')` ([PR #28](https://github.com/riasc/RNAnue/pull/28))
 
 # [0.3.0] - 2026-05-17
 
