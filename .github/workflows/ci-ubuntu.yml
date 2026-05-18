@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/viennarna
-          key: viennarna-2.6.4-ubuntu-24.04
+          key: viennarna-2.6.4-ubuntu-24.04-v2
 
       - name: Build ViennaRNA from source
         if: steps.vrna-cache.outputs.cache-hit != 'true'
@@ -44,7 +44,7 @@ jobs:
           curl -L https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_6_x/ViennaRNA-2.6.4.tar.gz -o vrna.tar.gz
           tar -xf vrna.tar.gz
           cd ViennaRNA-2.6.4
-          ./configure --prefix=$HOME/viennarna
+          ./configure --prefix=$HOME/viennarna --without-swig --without-doc --without-tutorial
           make -j$(nproc)
           make install
 
