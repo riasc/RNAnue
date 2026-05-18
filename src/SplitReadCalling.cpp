@@ -1,8 +1,10 @@
 #include "SplitReadCalling.hpp"
 #include "Exceptions.hpp"
 
+extern "C" {
 #include <ViennaRNA/fold_compound.h>
 #include <ViennaRNA/mfe.h>
+}
 
 using namespace seqan3::literals;
 using seqan3::get;
