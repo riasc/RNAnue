@@ -79,8 +79,32 @@ RNAnue provides different subcalls for individual procedures:
 | `analysis` | Annotation, statistical scoring, interaction tables |
 | `complete` | Run the full pipeline in sequence |
 
+The pipeline order (also what `complete` runs) is: `preproc` → `align` → `detect` → `clustering` → `analysis`.
+
 ```bash
 RNAnue <subcall> --config /path/to/params.cfg
+```
+
+Run `RNAnue --help` for the full list of options.
+
+### Quickstart
+
+End-to-end example using a config file:
+
+```bash
+RNAnue complete --config params.cfg
+```
+
+Or with the most common parameters on the command line:
+
+```bash
+RNAnue complete \
+    --trtms ./trtms \
+    --ctrls ./ctrls \
+    --outdir ./results \
+    --dbs reference.fa \
+    --features annotation.gff \
+    --threads 8
 ```
 
 ### Input
@@ -105,6 +129,8 @@ RNAnue accepts parameters from the command line and through a configuration file
 RNAnue <subcall> --config /path/to/params.cfg
 ```
 Command-line parameters take precedence over the config file.
+
+[`tests/humanSE.cfg`](./tests/humanSE.cfg) is a complete annotated config file you can copy as a starting template.
 
 ## Results
 
@@ -217,3 +243,15 @@ Test data is available in [tests/data/](./tests/data/).
 ## Troubleshooting
 
 Please [create an issue](https://github.com/riasc/RNAnue/issues) if you encounter any problems.
+
+## Citation
+
+If you use RNAnue, please cite the original paper:
+
+> Schäfer, R. A., & Voß, B. (2021). RNAnue: efficient data analysis for RNA-RNA interactomics. *Nucleic Acids Research*, 49(10), 1–10. https://doi.org/10.1093/nar/gkab340
+
+See [`CITATION.cff`](./CITATION.cff) for a machine-readable citation entry.
+
+## License
+
+RNAnue is licensed under the GNU General Public License v3.0. See [`LICENSE`](./LICENSE) for the full text.
