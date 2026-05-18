@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
+        build_type: ${{ github.event_name == 'pull_request' && fromJson('["Debug"]') || fromJson('["Release"]') }}
         c_compiler: [gcc-12, gcc-13, gcc-14]
         include:
           - c_compiler: gcc-12
@@ -30,6 +30,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-12 g++-12 gcc-13 g++-13 gcc-14 g++-14
           sudo apt-get install -y libboost-program-options-dev libhts-dev pkg-config
+
+      - name: Cache ViennaRNA
+        id: vrna-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/viennarna
+          key: viennarna-2.6.4-ubuntu-24.04-v2
+
+      - name: Build ViennaRNA from source
+        if: steps.vrna-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_6_x/ViennaRNA-2.6.4.tar.gz -o vrna.tar.gz
+          tar -xf vrna.tar.gz
+          cd ViennaRNA-2.6.4
+          ./configure --prefix=$HOME/viennarna --without-swig --without-doc --without-tutorial
+          make -j$(nproc)
+          make install
+
+      - name: Set PKG_CONFIG_PATH
+        run: echo "PKG_CONFIG_PATH=$HOME/viennarna/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Download SeqAn3
         run: |

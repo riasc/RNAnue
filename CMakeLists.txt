@@ -24,12 +24,16 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(HTSLIB REQUIRED IMPORTED_TARGET htslib)
 include_directories(${HTSLIB_INCLUDE_DIRS})
 
+###### ViennaRNA ######
+pkg_check_modules(RNALIB REQUIRED IMPORTED_TARGET RNAlib2)
+
 file(GLOB SOURCES "src/*.cpp")
 add_executable(RNAnue ${SOURCES})
 target_include_directories(RNAnue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(RNAnue seqan3::seqan3)
 target_link_libraries(RNAnue Boost::program_options)
 target_link_libraries(RNAnue PkgConfig::HTSLIB)
+target_link_libraries(RNAnue PkgConfig::RNALIB)
 
 cmake_print_properties(TARGETS RNAnue PROPERTIES TARGET_INCLUDE_DIRECTORIES)
 
@@ -52,6 +56,7 @@ target_include_directories(RNAnue_tests PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/incl
 target_link_libraries(RNAnue_tests seqan3::seqan3)
 target_link_libraries(RNAnue_tests Boost::program_options)
 target_link_libraries(RNAnue_tests PkgConfig::HTSLIB)
+target_link_libraries(RNAnue_tests PkgConfig::RNALIB)
 target_link_libraries(RNAnue_tests GTest::gtest_main)
 
 include(GoogleTest)

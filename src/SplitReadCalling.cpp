@@ -1,6 +1,11 @@
 #include "SplitReadCalling.hpp"
 #include "Exceptions.hpp"
 
+extern "C" {
+#include <ViennaRNA/fold_compound.h>
+#include <ViennaRNA/mfe.h>
+}
+
 using namespace seqan3::literals;
 using seqan3::get;
 
@@ -11,6 +16,10 @@ struct BamRecDeleter { void operator()(bam1_t* b) const { if(b) bam_destroy1(b);
 using HtsFilePtr = std::unique_ptr<samFile, HtsFileDeleter>;
 using BamHdrPtr = std::unique_ptr<bam_hdr_t, BamHdrDeleter>;
 using BamRecPtr = std::unique_ptr<bam1_t, BamRecDeleter>;
+
+// RAII wrapper for ViennaRNA fold compound
+struct VrnaFoldCompoundDeleter { void operator()(vrna_fold_compound_t* fc) const { if(fc) vrna_fold_compound_free(fc); } };
+using VrnaFoldCompoundPtr = std::unique_ptr<vrna_fold_compound_t, VrnaFoldCompoundDeleter>;
 
 template <typename T>
 SafeQueue<T>::SafeQueue() {}
@@ -534,48 +543,26 @@ TracebackResult SplitReadCalling::complementarity(dtp::DNASpan& seq1, dtp::DNASp
 }
 
 std::pair<double,std::string> SplitReadCalling::hybridization(std::span<seqan3::dna5> &seq1, std::span<seqan3::dna5> &seq2) {
-    double hybScore = 1000.0;
     if(seq1.empty() || seq2.empty()) { return {1000,""}; }
     std::string rna1str, rna2str = "";
     for(unsigned i=0;i<seq1.size();++i) { rna1str += seq1[i].to_char(); } // convert to string
     for(unsigned i=0;i<seq2.size();++i) { rna2str += seq2[i].to_char(); }
 
-    // remove non-printable
-    rna1str = helper::removeNonPrintable(rna1str); // remove non printable
-    rna2str = helper::removeNonPrintable(rna2str); // remove non printable
+    rna1str = seqIO::removeNonATGC(helper::removeNonPrintable(rna1str));
+    rna2str = seqIO::removeNonATGC(helper::removeNonPrintable(rna2str));
+    if(rna1str.empty() || rna2str.empty()) { return {1000,""}; }
 
-    // remove non-ATGC
-    rna1str = seqIO::removeNonATGC(rna1str); // remove non ATGC
-    rna2str = seqIO::removeNonATGC(rna2str); // remove non ATGC
+    // ViennaRNA dimer MFE — equivalent to `RNAcofold` with default settings.
+    // vrna_fold_compound_t is per-instance, so safe to call from multiple consumer threads.
+    std::string seq = rna1str + "&" + rna2str;
+    VrnaFoldCompoundPtr fc(vrna_fold_compound(seq.c_str(), nullptr, VRNA_OPTION_DEFAULT));
+    if(!fc) { return {1000,""}; }
 
-    std::string hyb = "echo '" + rna1str + "&" + rna2str + "' | RNAcofold"; // call
+    std::string structure(seq.size() + 1, '\0');
+    float mfe = vrna_mfe_dimer(fc.get(), structure.data());
+    structure.resize(seq.size()); // drop trailing null
 
-    FILE* pipe = popen(hyb.c_str(), "r");
-    if (!pipe) {
-        std::cerr << "Error opening pipe" << std::endl;
-        return {1000,""};
-    }
-    char buffer[1024];
-    std::string result;
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        result += buffer;
-    }
-    pclose(pipe);
-    if(result.empty()) { return {1000,""}; }
-
-    std::stringstream ss(result);
-    std::vector<std::string> tokens;
-    std::string tmp;
-    while(getline(ss,tmp,'\n')) {
-        tokens.push_back(tmp);
-    }
-    std::string dotbracket = tokens[1].substr(0,tokens[1].find(' '));
-    std::regex regexp("-?[[:digit:]]{1,2}\\.[[:digit:]]{1,2}");
-    std::smatch matches;
-    std::regex_search(tokens[1], matches, regexp);
-    hybScore = stod(matches[0]);
-
-    return std::make_pair(hybScore, dotbracket);
+    return {static_cast<double>(mfe), structure};
 }
 
 void SplitReadCalling::addComplementarityToSamRecord(SAMrecord &rec1, SAMrecord &rec2, TracebackResult &res) {

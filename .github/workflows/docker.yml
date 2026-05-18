@@ -1,11 +1,10 @@
 name: docker-release
 on:
   push:
+    branches:
+      - master
     tags:
       - '*'
-  pull_request:
-    branches:
-      - "master"
 env:
   REGISTRY: docker.io
   IMAGE_NAME: riasc/rnanue
@@ -19,7 +18,7 @@ jobs:
       - name: Set build matrix
         id: set
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo 'matrix=[{"platform":"linux/amd64","runner":"ubuntu-24.04"},{"platform":"linux/arm64","runner":"ubuntu-24.04-arm"}]' >> "$GITHUB_OUTPUT"
           else
             echo 'matrix=[{"platform":"linux/amd64","runner":"ubuntu-24.04"}]' >> "$GITHUB_OUTPUT"
@@ -39,7 +38,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/')
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -55,17 +54,17 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          outputs: ${{ github.event_name == 'push' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE_NAME) || 'type=docker' }}
+          outputs: ${{ startsWith(github.ref, 'refs/tags/') && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE_NAME) || 'type=docker' }}
 
       - name: Export digest
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: digest-${{ steps.platform.outputs.slug }}
@@ -75,7 +74,7 @@ jobs:
 
   manifest:
     needs: build
-    if: github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Download digests
