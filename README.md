@@ -1,3 +1,4 @@
+[![CI (Ubuntu)](https://github.com/riasc/RNAnue/actions/workflows/ci-ubuntu.yml/badge.svg)](https://github.com/riasc/RNAnue/actions/workflows/ci-ubuntu.yml)
 [![docker-release](https://github.com/riasc/RNAnue/actions/workflows/docker.yml/badge.svg)](https://github.com/riasc/RNAnue/actions/workflows/docker.yml)
 
 # RNAnue
@@ -12,13 +13,13 @@ RNAnue is a comprehensive analysis tool to detect RNA-RNA interactions from Dire
 
 RNAnue has the following dependencies. Make sure the requirements are satisfied by your system.
 
-* **C++20** compiler (GCC >= 12, Clang >= 14)
+* **C++20** compiler — GCC >= 12 (SeqAn3 does not support Clang)
 * **[CMake](https://cmake.org/)** (>= 3.22.1)
-* **[Boost C++ Libraries](https://www.boost.org/)** (>= 1.56.0) — program_options, filesystem, unit_test_framework
+* **[Boost C++ Libraries](https://www.boost.org/)** (>= 1.56.0) — `program_options` component only
 * **[SeqAn3](https://github.com/seqan/seqan3)** (v3.3.0) — expected in `./seqan3/` in the repo root
-* **[HTSlib](https://github.com/samtools/htslib)** — found via pkg-config
-* **[Segemehl](http://www.bioinf.uni-leipzig.de/Software/segemehl/)** (v0.3.4) — must be in `$PATH`
-* **[ViennaRNA Package](https://www.tbi.univie.ac.at/RNA/)** (>= v2.4.17) — must be in `$PATH`
+* **[HTSlib](https://github.com/samtools/htslib)** — linked at build time, found via `pkg-config` (`htslib.pc`)
+* **[ViennaRNA Package](https://www.tbi.univie.ac.at/RNA/)** (v2.6.4 recommended) — linked at build time, found via `pkg-config` (`RNAlib2.pc`). Not packaged on Ubuntu/Debian; build from source with `./configure --without-swig --without-doc --without-tutorial && make && sudo make install`.
+* **[Segemehl](http://www.bioinf.uni-leipzig.de/Software/segemehl/)** (v0.3.4) — runtime dependency for the `align` subcall, must be in `$PATH`
 
 ### Building from source
 
@@ -46,8 +47,10 @@ The `RNAnue` binary will be in the `build/` directory.
 A ready-to-use Docker container is available:
 ```bash
 docker pull riasc/rnanue:latest
-docker run riasc/rnanue RNAnue <subcall> --config /path/to/params.cfg
+docker run -v /path/to/data:/data riasc/rnanue RNAnue <subcall> --config /data/params.cfg
 ```
+
+The `-v` flag mounts your local data directory into the container at `/data`. Paths in your config file should refer to `/data/...` (the in-container path), not the host path.
 
 ### Singularity
 
@@ -76,8 +79,32 @@ RNAnue provides different subcalls for individual procedures:
 | `analysis` | Annotation, statistical scoring, interaction tables |
 | `complete` | Run the full pipeline in sequence |
 
+The pipeline order (also what `complete` runs) is: `preproc` → `align` → `detect` → `clustering` → `analysis`.
+
 ```bash
 RNAnue <subcall> --config /path/to/params.cfg
+```
+
+Run `RNAnue --help` for the full list of options.
+
+### Quickstart
+
+End-to-end example using a config file:
+
+```bash
+RNAnue complete --config params.cfg
+```
+
+Or with the most common parameters on the command line:
+
+```bash
+RNAnue complete \
+    --trtms ./trtms \
+    --ctrls ./ctrls \
+    --outdir ./results \
+    --dbs reference.fa \
+    --features annotation.gff \
+    --threads 8
 ```
 
 ### Input
@@ -103,6 +130,8 @@ RNAnue <subcall> --config /path/to/params.cfg
 ```
 Command-line parameters take precedence over the config file.
 
+[`tests/humanSE.cfg`](./tests/humanSE.cfg) is a complete annotated config file you can copy as a starting template.
+
 ## Results
 
 Results are stored in the specified output folder and its subfolders (`./preproc`, `./align`, `./detect`, `./clustering`, `./analysis`).
@@ -121,13 +150,15 @@ Custom SAM tags reported in split reads:
 | Tag | Description |
 | --- | ----------- |
 | XC:f | Complementarity score |
-| XE:f | Hybridization energy |
+| XE:f | Hybridization energy (MFE in kcal/mol) |
 | XA:Z | Alignment of sequence |
 | XM:i | Matches in alignment |
 | XL:i | Length of alignment |
 | XR:f | Site length ratio |
 | XS:i | Alignment score |
 | XD:Z | MFE structure in dot-bracket notation |
+| XH:i | Number of splits (SAM record) |
+| XJ:i | Number of splits (whole read) |
 | XX:i | Split boundary start |
 | XY:i | Split boundary end |
 
@@ -207,8 +238,20 @@ Run the test suite:
 ./build/RNAnue_tests
 ```
 
-Test data is available in [test/data/](./test/data/).
+Test data is available in [tests/data/](./tests/data/).
 
 ## Troubleshooting
 
 Please [create an issue](https://github.com/riasc/RNAnue/issues) if you encounter any problems.
+
+## Citation
+
+If you use RNAnue, please cite the original paper:
+
+> Schäfer, R. A., & Voß, B. (2021). RNAnue: efficient data analysis for RNA-RNA interactomics. *Nucleic Acids Research*, 49(10), 1–10. https://doi.org/10.1093/nar/gkab340
+
+See [`CITATION.cff`](./CITATION.cff) for a machine-readable citation entry.
+
+## License
+
+RNAnue is licensed under the GNU General Public License v3.0. See [`LICENSE`](./LICENSE) for the full text.
